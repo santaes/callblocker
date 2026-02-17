@@ -30,7 +30,7 @@
         "android.permission.ANSWER_PHONE_CALLS",
         "android.permission.CALL_PHONE"
       ],
-      "versionCode": 2
+      "versionCode": 4
     },
     "web": {
       "output": "static",
