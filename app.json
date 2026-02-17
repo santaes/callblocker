@@ -12,6 +12,7 @@
       "supportsTablet": true
     },
     "android": {
+      "package": "com.santa_es.CallBlocker",
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
@@ -20,13 +21,16 @@
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
+      "softwareKeyboardLayoutMode": "resize",
       "permissions": [
         "android.permission.READ_PHONE_STATE",
-        "android.permission.CALL_PHONE",
+        "android.permission.READ_CALL_LOG",
         "android.permission.READ_CONTACTS",
-        "android.permission.WRITE_CONTACTS",
-        "android.permission.ANSWER_PHONE_CALLS"
-      ]
+        "android.permission.READ_PHONE_NUMBERS",
+        "android.permission.ANSWER_PHONE_CALLS",
+        "android.permission.CALL_PHONE"
+      ],
+      "versionCode": 2
     },
     "web": {
       "output": "static",
@@ -50,6 +54,12 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "bfb64406-fe06-4230-84a0-18466b82dcf0"
+      }
     }
   }
 }

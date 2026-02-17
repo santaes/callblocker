@@ -278,27 +278,41 @@ class SpamDatabaseService {
   }
 
   async blockAllSuspiciousNumbers(): Promise<number> {
-    let blockedCount = 0;
+    if (!this.initialized) {
+      await this.initialize();
+    }
+    
+    const startTime = Date.now();
     
     try {
-      // Debug: Check what's in the spam database
       console.log('Spam database size before blocking:', this.spamDatabase.size);
-      console.log('Spam database entries:', Array.from(this.spamDatabase.keys()));
-      console.log('Blocked numbers before:', Array.from(this.blockedNumbers));
+      console.log('Blocked numbers before:', this.blockedNumbers.size);
       
-      // Add all spam database numbers to blocked list
-      for (const [number, info] of this.spamDatabase.entries()) {
-        if (!this.blockedNumbers.has(number)) {
-          this.blockedNumbers.add(number);
-          blockedCount++;
-          console.log('Blocked number:', number, 'Type:', info.type);
-        }
+      // Get all numbers from spam database that aren't already blocked
+      const numbersToBlock = Array.from(this.spamDatabase.keys()).filter(
+        number => !this.blockedNumbers.has(number)
+      );
+      
+      const blockedCount = numbersToBlock.length;
+      
+      if (blockedCount > 0) {
+        // Add all numbers to blocked list
+        numbersToBlock.forEach(number => this.blockedNumbers.add(number));
+        
+        // Save the updated blocked numbers
+        await this.saveBlockedNumbers();
+        
+        // Update statistics
+        await this.updateStats({
+          totalBlocked: blockedCount,
+          lastUpdate: new Date().toISOString()
+        });
       }
       
-      console.log('Total blocked count:', blockedCount);
-      console.log('Blocked numbers after:', Array.from(this.blockedNumbers));
+      const endTime = Date.now();
+      console.log(`Blocked ${blockedCount} numbers in ${endTime - startTime}ms`);
+      console.log('Blocked numbers after:', this.blockedNumbers.size);
       
-      await this.saveBlockedNumbers();
       return blockedCount;
     } catch (error) {
       console.error('Failed to block all suspicious numbers:', error);
