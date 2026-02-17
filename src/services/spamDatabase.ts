@@ -8,7 +8,8 @@ interface StorageKeys {
 
 interface SpamDatabase {
   name: string;
-  url: string;
+  url?: string;  // Single URL (legacy)
+  urls?: string[]; // Multiple URLs to try in order
   type: string;
 }
 
@@ -27,10 +28,28 @@ const STORAGE_KEYS = {
 } as const;
 
 // Open source spam number databases
+// Helper to detect if we're running in a web browser
+const isWeb = typeof window !== 'undefined';
+
 const SPAM_DATABASES: SpamDatabase[] = [
   {
     name: 'Spanish Spam Database',
-    url: 'https://raw.githubusercontent.com/mv12star/lista-telefonos-spam/refs/heads/main/numeros_spam_dialer.txt',
+    urls: [
+      // In web, use CORS proxy first
+      ...(isWeb ? [
+        'https://corsproxy.io/?' + encodeURIComponent('https://raw.githubusercontent.com/mv12star/lista-telefonos-spam/main/numeros_spam_dialer.txt'),
+        'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent('https://raw.githubusercontent.com/mv12star/lista-telefonos-spam/main/numeros_spam_dialer.txt'),
+        'https://api.allorigins.win/raw?url=' + encodeURIComponent('https://raw.githubusercontent.com/mv12star/lista-telefonos-spam/main/numeros_spam_dialer.txt'),
+      ] : []),
+      
+      // Direct GitHub URL (works in React Native)
+      'https://raw.githubusercontent.com/mv12star/lista-telefonos-spam/main/numeros_spam_dialer.txt',
+      
+      // Alternative mirrors
+      'https://raw.githack.com/mv12star/lista-telefonos-spam/main/numeros_spam_dialer.txt',
+      'https://cdn.jsdelivr.net/gh/mv12star/lista-telefonos-spam@main/numeros_spam_dialer.txt',
+      'https://raw.githubusercontent.com/mv12star/lista-telefonos-spam/main/numeros_spam_dialer.txt?raw=true'
+    ],
     type: 'spanish_spam'
   }
 ];
@@ -44,9 +63,12 @@ const COMMON_SPAM_NUMBERS = [
 ];
 
 class SpamDatabaseService {
-  private blockedNumbers: Set<string> = new Set();
-  private spamDatabase: Map<string, SpamInfo> = new Map();
-  private initialized: boolean = false;
+  private blockedNumbers: Set<string> = new Set()
+  private spamDatabase: Map<string, SpamInfo> = new Map()
+  private initialized: boolean = false
+  private totalBlocked: number = 0
+  private spamDatabaseSize: number = 0
+  private lastUpdate: string | null = null
 
   async initialize(): Promise<void> {
     if (this.initialized) return;
@@ -120,30 +142,167 @@ class SpamDatabaseService {
     }
   }
 
-  async updateSpamDatabase(): Promise<void> {
-    try {
-      for (const db of SPAM_DATABASES) {
-        const response = await fetch(db.url);
-        const data = await response.text();
+  // normalizePhoneNumber method is defined later in the file
+
+  private processSpamData(data: string, type: string): Array<[string, SpamInfo]> {
+    const result: Array<[string, SpamInfo]> = [];
+    
+    if (type === 'spanish_spam') {
+      // Process comma-separated numbers
+      data.split('\n').forEach(line => {
+        // Skip empty lines and comments
+        if (!line.trim() || line.startsWith('#')) {
+          return;
+        }
         
-        if (db.type === 'spanish_spam') {
-          // Parse Spanish CSV format (comma-separated numbers)
-          const numbers = data.split(',').map(num => num.trim()).filter(num => num);
-          numbers.forEach(number => {
-            this.spamDatabase.set(number, {
+        // Split by comma and process each number
+        line.split(',').forEach(num => {
+          const normalized = this.normalizePhoneNumber(num.trim());
+          if (normalized) {
+            result.push([normalized, {
               type: 'spanish_spam',
-              source: db.name,
+              source: 'Spanish Spam Database',
               date: new Date().toISOString(),
-              reports: 50
-            });
-          });
+              reports: 1
+            }]);
+          }
+        });
+      });
+    }
+    
+    return result;
+  }
+
+  private async tryFetchUrl(url: string, signal: AbortSignal, attempt: number = 1): Promise<string> {
+    const maxRetries = 2;
+    const retryDelay = 1000;
+    
+    try {
+      console.log(`Trying URL: ${url} (attempt ${attempt}/${maxRetries + 1})`);
+      
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => {
+        console.log(`Request to ${url} timed out`);
+        controller.abort();
+      }, 20000); // 20 second timeout
+      
+      try {
+        const response = await fetch(url, {
+          signal: controller.signal,
+          headers: {
+            'Cache-Control': 'no-cache',
+            'Pragma': 'no-cache',
+            'Accept': 'text/plain',
+            'User-Agent': 'CallBlocker/1.0 (https://github.com/yourusername/callblocker)'
+          }
+        });
+        
+        clearTimeout(timeoutId);
+
+        if (!response.ok) {
+          const errorText = await response.text().catch(() => 'No error details');
+          throw new Error(`HTTP error! status: ${response.status}, details: ${errorText}`);
+        }
+
+        const data = await response.text();
+        if (!data) {
+          throw new Error('Empty response received');
+        }
+
+        console.log(`Successfully fetched ${data.length} bytes from ${url}`);
+        return data;
+      } catch (error) {
+        clearTimeout(timeoutId);
+        
+        // If we have retries left, retry
+        if (attempt <= maxRetries) {
+          console.log(`Retrying ${url} in ${retryDelay}ms...`);
+          await new Promise(resolve => setTimeout(resolve, retryDelay * attempt));
+          return this.tryFetchUrl(url, signal, attempt + 1);
+        }
+        
+        throw error;
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      console.warn(`Failed to fetch from ${url}:`, errorMessage);
+      throw error;
+    }
+  }
+
+  private async updateSpamDatabase(): Promise<void> {
+    console.log('Starting spam database update...');
+    let success = false;
+    
+    try {
+      if (!this.initialized) {
+        await this.initialize();
+      }
+
+      for (const db of SPAM_DATABASES) {
+        if (!db.urls || db.urls.length === 0) {
+          console.warn(`No URLs defined for database: ${db.name}`);
+          continue;
+        }
+
+        console.log(`Fetching spam data from: ${db.name}`);
+        let lastError: Error | null = null;
+
+        for (let i = 0; i < db.urls.length; i++) {
+          const url = db.urls[i];
+          try {
+            console.log(`Attempting to fetch from URL ${i + 1}/${db.urls.length}: ${url}`);
+            
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
+            
+            const data = await this.tryFetchUrl(url, controller.signal);
+            clearTimeout(timeoutId);
+
+            if (data) {
+              console.log(`Successfully fetched data from ${url}`);
+              const processedData = await this.processSpamData(data, db.type);
+              
+              if (processedData.length > 0) {
+                console.log(`Adding ${processedData.length} numbers to spam database from ${db.name}`);
+                processedData.forEach(([number, info]) => {
+                  this.spamDatabase.set(number, info);
+                });
+                
+                // Save the updated database
+                await this.saveSpamDatabase();
+                success = true;
+                
+                // Save the last update time
+                this.lastUpdate = new Date().toISOString();
+                await AsyncStorage.setItem(STORAGE_KEYS.LAST_UPDATE, this.lastUpdate);
+                
+                console.log('Spam database update completed successfully');
+                return; // Success, exit the method
+              }
+            }
+          } catch (error) {
+            lastError = error as Error;
+            console.warn(`Failed to fetch from ${url}:`, error);
+            
+            // If this is a 404 and we're in development, try the next URL
+            if (lastError.message.includes('404') && process.env.NODE_ENV === 'development') {
+              console.log('Skipping to next URL due to 404 error in development');
+              continue;
+            }
+          }
+        }
+
+        if (!success && lastError) {
+          console.error(`All URLs failed for ${db.name}. Last error:`, lastError);
         }
       }
-      
-      await this.saveSpamDatabase();
-      await AsyncStorage.setItem(STORAGE_KEYS.LAST_UPDATE, new Date().toISOString());
+
+      if (!success) {
+        throw new Error('All spam database update attempts failed');
+      }
     } catch (error) {
-      console.error('Failed to update spam database:', error);
+      console.error('Error updating spam database:', error);
       throw error;
     }
   }
@@ -154,57 +313,73 @@ class SpamDatabaseService {
   }
 
   private normalizePhoneNumber(phoneNumber: string): string {
-    // Remove all non-digit characters except +
-    return phoneNumber.replace(/[^\d+]/g, '');
+    if (!phoneNumber) return '';
+    // Remove all non-digit characters except + and leading +
+    return phoneNumber.replace(/[^0-9+]/g, '').replace(/^\+/, '');
   }
 
   async blockNumber(phoneNumber: string, source: string = 'manual', type: string = 'manual_block'): Promise<void> {
     if (!this.initialized) await this.initialize();
 
+    const normalizedNumber = this.normalizePhoneNumber(phoneNumber);
+
     // Check if number is already blocked
-    if (this.blockedNumbers.has(phoneNumber)) {
+    if (this.blockedNumbers.has(normalizedNumber)) {
+      console.log(`Number ${normalizedNumber} is already blocked`);
       return; // Already blocked, no need to update
     }
 
-    // Add to blocked numbers
-    this.blockedNumbers.add(phoneNumber);
-    await AsyncStorage.setItem(
-      STORAGE_KEYS.BLOCKED_NUMBERS,
-      JSON.stringify(Array.from(this.blockedNumbers))
-    );
+    try {
+      // Add to blocked numbers
+      this.blockedNumbers.add(normalizedNumber);
+      await this.saveBlockedNumbers();
 
-    // Update statistics
-    await this.updateStats({
-      totalBlocked: 1, // Increment by 1
-      spamDatabaseSize: this.spamDatabase.has(phoneNumber) ? 0 : 1 // Only increment if not in spam database
-    });
-
-    // Add to spam database if not already present
-    if (!this.spamDatabase.has(phoneNumber)) {
-      this.spamDatabase.set(phoneNumber, {
-        type,
-        source,
-        date: new Date().toISOString(),
-        reports: 1
+      // Update statistics
+      await this.updateStats({
+        totalBlocked: 1, // Increment by 1
+        spamDatabaseSize: this.spamDatabase.has(normalizedNumber) ? 0 : 1 // Only increment if not in spam database
       });
-      await this.saveSpamDatabase();
+
+      // Add to spam database if not already present
+      if (!this.spamDatabase.has(normalizedNumber)) {
+        this.spamDatabase.set(normalizedNumber, {
+          type,
+          source,
+          date: new Date().toISOString(),
+          reports: 1
+        });
+        await this.saveSpamDatabase();
+      }
+      
+      console.log(`Successfully blocked number: ${normalizedNumber}`);
+    } catch (error) {
+      console.error('Error blocking number:', error);
+      throw error;
     }
   }
 
   async unblockNumber(phoneNumber: string): Promise<void> {
     if (!this.initialized) await this.initialize();
+    
+    const normalizedNumber = this.normalizePhoneNumber(phoneNumber);
 
-    if (this.blockedNumbers.has(phoneNumber)) {
-      this.blockedNumbers.delete(phoneNumber);
-      await AsyncStorage.setItem(
-        STORAGE_KEYS.BLOCKED_NUMBERS,
-        JSON.stringify(Array.from(this.blockedNumbers))
-      );
-      
-      // Update statistics
-      await this.updateStats({
-        totalBlocked: -1 // Decrement by 1
-      });
+    if (this.blockedNumbers.has(normalizedNumber)) {
+      try {
+        this.blockedNumbers.delete(normalizedNumber);
+        await this.saveBlockedNumbers();
+        
+        // Update statistics
+        await this.updateStats({
+          totalBlocked: -1 // Decrement by 1
+        });
+        
+        console.log(`Successfully unblocked number: ${normalizedNumber}`);
+      } catch (error) {
+        console.error('Error unblocking number:', error);
+        throw error;
+      }
+    } else {
+      console.log(`Number ${normalizedNumber} was not blocked`);
     }
   }
 
