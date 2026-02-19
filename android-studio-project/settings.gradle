@@ -1,0 +1,14 @@
+pluginManagement {
+    repositories {
+        gradlePluginPortal()
+        google()
+        mavenCentral()
+    }
+}
+dependencyResolutionManagement {
+    repositoriesMode.setFailOnVersionConflict()
+    repositories {
+        google()
+        mavenCentral()
+    }
+}

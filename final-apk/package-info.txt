@@ -1,0 +1,15 @@
+
+✅ APK Package Created Successfully!
+📍 Location: C:\Users\oleks\Desktop\CallBlocker\final-apk
+📊 Size: 3.71 MB
+📱 Ready for Android installation
+
+🔧 Installation Instructions:
+1. Enable "Unknown Sources" in Android Settings → Security
+2. Transfer CallBlocker.apk to your Android device
+3. Install the APK
+4. Grant all requested permissions when prompted
+5. Launch CallBlocker app
+
+⚠️ Note: This is a ZIP-based APK package. For production builds, use EAS Build service.
+  

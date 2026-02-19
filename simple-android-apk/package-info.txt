@@ -1,0 +1,21 @@
+
+📱 SIMPLE ANDROID PACKAGE
+========================
+
+This is a basic Android app package ready for manual APK creation.
+
+📁 Contents:
+- index.android.bundle (React Native bundle)
+- assets/ (app resources)
+
+🔧 To Create APK:
+1. Use Android Studio: Import this folder as a project
+2. Use online build service: EAS Build, AppCenter, etc.
+3. Use Android build tools: aapt, gradle with proper setup
+
+📊 Bundle Size: 3.71 MB
+
+📍 Location: C:\Users\oleks\Desktop\CallBlocker\simple-android-apk
+
+⚠️  Note: This is NOT a signed APK. For production, sign the APK.
+  

@@ -1,0 +1,7 @@
+
+To create a real APK:
+1. Use Android Studio with this project
+2. Or use EAS Build: npx eas build --platform android
+3. Or downgrade Java to version 17 and run: npx expo run:android
+4. Upload to an online APK builder service
+  
