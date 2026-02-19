@@ -20,16 +20,25 @@
 @rem Set local scope for the variables with windows NT shell
 if "%OS%"=="Windows_NT" setlocal
 
-set DIRNAME=%~dp0
-if "%DIRNAME%" == "" set DIRNAME=%~dp0
-set APP_BASE_NAME=%~n0
-set APP_HOME=%DIRNAME%
+@rem Uncomment this line to override the Gradle executable. This should be used with caution.
+@rem set GRADLE_WRAPPER=%~dp0\gradlew.bat
 
-@rem Resolve any "." or ".." in APP_HOME to make it absolute.
-if "%APP_HOME:~-1,%"=="%" set APP_HOME=%~dp0
-if "%APP_HOME:~-2,%"==".." set APP_HOME=%~dp0
-if "%APP_HOME:~-3,%"==".." set APP_HOME=%~dp0
-if "%APP_HOME:~-4,%"==".." set APP_HOME=%~dp0
+@rem Determine the Command Processor to use
+if "%PROCESSOR_ARCHITECTURE%"=="AMD64" set ARCH=amd64
+if "%PROCESSOR_ARCHITECTURE%"=="IA64" set ARCH=amd64
+if "%PROCESSOR_ARCHITECTURE%"=="x86" set ARCH=x86
+if "%PROCESSOR_ARCHITECTURE%"=="x86_64" set ARCH=x86_64
+if not defined ARCH set ARCH=x86
+
+@rem Find gradle.exe
+set GRADLE_EXE=%~dp0\gradle\bin\gradle.exe
+if exist "%GRADLE_EXE%" goto :foundGradle
+
+echo ERROR: GRADLE installation not found. Please set GRADLE_HOME or add gradle to your PATH.
+goto :eof
+
+:foundGradle
+set APP_HOME=%~dp0
 
 @rem Add default JVM options here. You can also use JAVA_OPTS and GRADLE_OPTS to pass JVM options to this script.
 set DEFAULT_JVM_OPTS="-Xmx64m" "-Xms64m"
@@ -38,40 +47,11 @@ set DEFAULT_JVM_OPTS="-Xmx64m" "-Xms64m"
 if defined JAVA_HOME goto findJavaFromJavaHome
 
 set JAVA_EXE=java.exe
-if not defined JAVA_HOME (
-  echo ERROR: Environment variable JAVA_HOME has not been set.
-  echo ERROR: Please set the JAVA_HOME variable in your environment to match the
-  echo ERROR: location of your Java installation.
-  echo ERROR: For example:
-  echo ERROR:   set JAVA_HOME=C:\Program Files\Java\jdk1.8.0_92
-  echo ERROR:   set PATH=%%JAVA_HOME%%\bin;%%PATH%%
-  echo ERROR:   gradlew.bat assembleRelease
-  goto end
-)
-
-:findJavaFromJavaHome
-set JAVA_EXEC=%JAVA_HOME:/bin/java.exe
-if exist "%JAVA_EXEC%" goto execute
-
-echo.
-echo ERROR: JAVA_HOME is set to an invalid directory: %JAVA_HOME%
-echo ERROR: Please set the JAVA_HOME variable in your environment to match the
-echo ERROR: location of your Java installation.
-echo ERROR: For example:
-echo ERROR:   set JAVA_HOME=C:\Program Files\Java\jdk1.8.0_92
-echo ERROR:   set PATH=%%JAVA_HOME%%\bin;%%PATH%%
-echo ERROR:   gradlew.bat assembleRelease
-
-goto end
-
-:execute
-@rem Setup the command line
-
-set CLASSPATH=%APP_HOME%\gradle\wrapper\gradle-wrapper.jar
-
+if exist "%JAVA_HOME%\bin\java.exe" set JAVA_EXE=%JAVA_HOME%\bin\java.exe
+if exist "%JAVA_HOME%\jre\bin\java.exe" set JAVA_EXE=%JAVA_HOME%\jre\bin\java.exe
 
 @rem Execute Gradle
-"%JAVA_EXE%" %DEFAULT_JVM_OPTS% %JAVA_OPTS% %GRADLE_OPTS% "-Dorg.gradle.appname=%APP_BASE_NAME%" -classpath "%CLASSPATH%" org.gradle.wrapper.GradleWrapperMain %APP_ARGS%
+"%JAVA_EXE%" %DEFAULT_JVM_OPTS% %JAVA_OPTS% %GRADLE_OPTS% "-Dorg.gradle.appname=%APP_BASE_NAME%" -classpath "%APP_HOME%\gradle\wrapper\gradle-wrapper.jar" org.gradle.wrapper.GradleWrapperMain %APP_ARGS%
 
-:end
+:eof
 @endlocal
