@@ -230,7 +230,7 @@ class SpamDatabaseService {
     }
   }
 
-  private async updateSpamDatabase(): Promise<void> {
+  public async updateSpamDatabase(): Promise<void> {
     console.log('Starting spam database update...');
     let success = false;
     

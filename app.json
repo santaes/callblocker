@@ -4,7 +4,7 @@
     "slug": "CallBlocker",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/favicon.svg",
+    "icon": "./assets/images/android-icon-foreground.png",
     "scheme": "callblocker",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
@@ -30,7 +30,7 @@
         "android.permission.ANSWER_PHONE_CALLS",
         "android.permission.CALL_PHONE"
       ],
-      "versionCode": 4
+      "versionCode": 6
     },
     "web": {
       "output": "static",
