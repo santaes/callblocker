@@ -15,3 +15,8 @@ module.exports = function (api) {
     ],
   };
 };
+
+// Import polyfills for Node.js environment
+if (typeof window === 'undefined') {
+  require('./polyfills.js');
+}
