@@ -1,13 +1,27 @@
 import React, { useEffect, useState } from 'react';
 import {
-  ScrollView,
-  StyleSheet,
-  Text,
-  View
+    FlatList,
+    ListRenderItem,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View
 } from 'react-native';
 import CallBlockerService from '../../src/services/callBlocker';
 
-export default function SettingsScreen() {
+interface SpamNumber {
+  number: string;
+  info: {
+    type: string;
+    source: string;
+    date: string;
+    reports?: number;
+  };
+}
+
+export default function ExploreScreen() {
   const [stats, setStats] = useState({
     totalBlocked: 0,
     spanishSpammers: 0,
@@ -16,9 +30,19 @@ export default function SettingsScreen() {
     databaseSize: 0
   });
 
+  const [allSpamNumbers, setAllSpamNumbers] = useState<SpamNumber[]>([]);
+  const [filteredSpamNumbers, setFilteredSpamNumbers] = useState<SpamNumber[]>([]);
+  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [selectedFilter, setSelectedFilter] = useState<string>('all');
+
   useEffect(() => {
     loadStats();
+    loadAllSpamNumbers();
   }, []);
+
+  useEffect(() => {
+    filterSpamNumbers();
+  }, [allSpamNumbers, searchQuery, selectedFilter]);
 
   const loadStats = async () => {
     try {
@@ -53,16 +77,69 @@ export default function SettingsScreen() {
     }
   };
 
+  const loadAllSpamNumbers = async () => {
+    try {
+      await CallBlockerService.initialize();
+      const spamNumbers = CallBlockerService.getAllSpamNumbers();
+      setAllSpamNumbers(spamNumbers);
+      console.log('Loaded spam numbers:', spamNumbers.length);
+    } catch (error) {
+      console.error('Failed to load spam numbers:', error);
+    }
+  };
+
+  const filterSpamNumbers = () => {
+    let filtered = allSpamNumbers;
+
+    // Apply type filter
+    if (selectedFilter !== 'all') {
+      filtered = filtered.filter(item => item.info.type === selectedFilter);
+    }
+
+    // Apply search filter
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(item =>
+        item.number.includes(query) ||
+        item.info.source.toLowerCase().includes(query) ||
+        item.info.type.toLowerCase().includes(query)
+      );
+    }
+
+    setFilteredSpamNumbers(filtered);
+  };
+
+  const renderSpamNumber: ListRenderItem<SpamNumber> = ({ item }) => (
+    <View style={styles.spamNumberItem}>
+      <View style={styles.spamNumberInfo}>
+        <Text style={styles.spamNumberText}>{item.number}</Text>
+        <Text style={styles.spamNumberType}>
+          {item.info.type.replace('_', ' ').toUpperCase()} • {item.info.source}
+        </Text>
+        {item.info.reports && (
+          <Text style={styles.spamNumberReports}>
+            {item.info.reports} reports
+          </Text>
+        )}
+      </View>
+      <View style={styles.spamNumberDate}>
+        <Text style={styles.dateText}>
+          {new Date(item.info.date).toLocaleDateString()}
+        </Text>
+      </View>
+    </View>
+  );
+
   return (
     <ScrollView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>Settings</Text>
-        <Text style={styles.subtitle}>CallBlocker Statistics & Configuration</Text>
+        <Text style={styles.title}>Explore</Text>
+        <Text style={styles.subtitle}>Database & Statistics</Text>
       </View>
 
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>📊 Statistics</Text>
-        
+
         <View style={styles.statItem}>
           <Text style={styles.statLabel}>Total Blocked Numbers</Text>
           <Text style={styles.statValue}>{stats.totalBlocked}</Text>
@@ -94,27 +171,8 @@ export default function SettingsScreen() {
       </View>
 
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>� Debug Info</Text>
-        
-        <View style={styles.statItem}>
-          <Text style={styles.statLabel}>Check Console</Text>
-          <Text style={styles.statValue}>F12 → Console</Text>
-        </View>
-        
-        <View style={styles.statItem}>
-          <Text style={styles.statLabel}>Common Spam Count</Text>
-          <Text style={styles.statValue}>16 (should be)</Text>
-        </View>
-        
-        <View style={styles.statItem}>
-          <Text style={styles.statLabel}>Expected Total</Text>
-          <Text style={styles.statValue}>16+ Spanish</Text>
-        </View>
-      </View>
+        <Text style={styles.sectionTitle}>🛡️ Protection Status</Text>
 
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>�🛡️ Protection Status</Text>
-        
         <View style={styles.statusItem}>
           <Text style={styles.statusLabel}>Spanish Spam Database</Text>
           <View style={[styles.statusIndicator, stats.spanishSpammers > 0 && styles.activeIndicator]} />
@@ -132,8 +190,65 @@ export default function SettingsScreen() {
       </View>
 
       <View style={styles.section}>
+        <Text style={styles.sectionTitle}> Database Numbers ({filteredSpamNumbers.length})</Text>
+
+        {/* Search and Filter Controls */}
+        <View style={styles.searchSection}>
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Search numbers, sources, or types..."
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+          />
+        </View>
+
+        <View style={styles.filterSection}>
+          <TouchableOpacity
+            style={[styles.filterButton, selectedFilter === 'all' && styles.filterButtonActive]}
+            onPress={() => setSelectedFilter('all')}
+          >
+            <Text style={[styles.filterButtonText, selectedFilter === 'all' && styles.filterButtonTextActive]}>
+              All ({allSpamNumbers.length})
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.filterButton, selectedFilter === 'common_spam' && styles.filterButtonActive]}
+            onPress={() => setSelectedFilter('common_spam')}
+          >
+            <Text style={[styles.filterButtonText, selectedFilter === 'common_spam' && styles.filterButtonTextActive]}>
+              Common ({allSpamNumbers.filter(n => n.info.type === 'common_spam').length})
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.filterButton, selectedFilter === 'spanish_spam' && styles.filterButtonActive]}
+            onPress={() => setSelectedFilter('spanish_spam')}
+          >
+            <Text style={[styles.filterButtonText, selectedFilter === 'spanish_spam' && styles.filterButtonTextActive]}>
+              Spanish ({allSpamNumbers.filter(n => n.info.type === 'spanish_spam').length})
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Spam Numbers List */}
+        <FlatList
+          data={filteredSpamNumbers}
+          renderItem={renderSpamNumber}
+          keyExtractor={(item) => item.number}
+          style={styles.spamList}
+          ListEmptyComponent={
+            <View style={styles.emptyContainer}>
+              <Text style={styles.emptyText}>
+                {allSpamNumbers.length === 0 ? 'No spam numbers in database' : 'No numbers match your search'}
+              </Text>
+            </View>
+          }
+          scrollEnabled={false}
+        />
+      </View>
+
+      <View style={styles.section}>
         <Text style={styles.sectionTitle}>📱 App Information</Text>
-        
+
         <View style={styles.infoItem}>
           <Text style={styles.infoLabel}>Version</Text>
           <Text style={styles.infoValue}>1.0.0</Text>
@@ -152,25 +267,6 @@ export default function SettingsScreen() {
         <View style={styles.infoItem}>
           <Text style={styles.infoLabel}>Update Frequency</Text>
           <Text style={styles.infoValue}>Manual</Text>
-        </View>
-      </View>
-
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>⚡ Performance</Text>
-        
-        <View style={styles.performanceItem}>
-          <Text style={styles.performanceLabel}>Block Detection Speed</Text>
-          <Text style={styles.performanceValue}>Instant</Text>
-        </View>
-
-        <View style={styles.performanceItem}>
-          <Text style={styles.performanceLabel}>Database Lookup</Text>
-          <Text style={styles.performanceValue}>&lt; 1ms</Text>
-        </View>
-
-        <View style={styles.performanceItem}>
-          <Text style={styles.performanceLabel}>Memory Usage</Text>
-          <Text style={styles.performanceValue}>Low</Text>
         </View>
       </View>
     </ScrollView>
@@ -271,21 +367,89 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#333',
   },
-  performanceItem: {
+  searchSection: {
+    marginBottom: 15,
+  },
+  searchInput: {
+    height: 40,
+    backgroundColor: '#f8f9fa',
+    borderRadius: 8,
+    paddingHorizontal: 15,
+    fontSize: 16,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+  },
+  filterSection: {
+    flexDirection: 'row',
+    marginBottom: 15,
+    gap: 10,
+  },
+  filterButton: {
+    flex: 1,
+    backgroundColor: '#f8f9fa',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 6,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+  },
+  filterButtonActive: {
+    backgroundColor: '#007AFF',
+    borderColor: '#007AFF',
+  },
+  filterButtonText: {
+    fontSize: 12,
+    color: '#666',
+    fontWeight: 'bold',
+  },
+  filterButtonTextActive: {
+    color: '#fff',
+  },
+  spamList: {
+    maxHeight: 400,
+  },
+  spamNumberItem: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 10,
+    paddingVertical: 12,
     borderBottomWidth: 1,
     borderBottomColor: '#f0f0f0',
   },
-  performanceLabel: {
-    fontSize: 16,
-    color: '#555',
+  spamNumberInfo: {
+    flex: 1,
   },
-  performanceValue: {
+  spamNumberText: {
     fontSize: 16,
     fontWeight: 'bold',
     color: '#333',
+    marginBottom: 4,
+  },
+  spamNumberType: {
+    fontSize: 12,
+    color: '#666',
+    marginBottom: 2,
+  },
+  spamNumberReports: {
+    fontSize: 11,
+    color: '#888',
+    fontStyle: 'italic',
+  },
+  spamNumberDate: {
+    alignItems: 'flex-end',
+  },
+  dateText: {
+    fontSize: 12,
+    color: '#999',
+  },
+  emptyContainer: {
+    padding: 20,
+    alignItems: 'center',
+  },
+  emptyText: {
+    fontSize: 14,
+    color: '#666',
+    textAlign: 'center',
   },
 });

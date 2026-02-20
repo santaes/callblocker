@@ -418,6 +418,16 @@ class SpamDatabaseService {
     };
   }
 
+  getDatabaseStats() {
+    return {
+      blockedNumbersCount: this.blockedNumbers.size,
+      spamDatabaseCount: this.spamDatabase.size,
+      commonSpamCount: Array.from(this.spamDatabase.values()).filter(info => info.type === 'common_spam').length,
+      spanishSpamCount: Array.from(this.spamDatabase.values()).filter(info => info.type === 'spanish_spam').length,
+      totalProtected: new Set([...Array.from(this.blockedNumbers), ...Array.from(this.spamDatabase.keys())]).size
+    };
+  }
+
   private async updateStats(updates: {
     totalBlocked?: number;
     spamDatabaseSize?: number;
@@ -437,19 +447,16 @@ class SpamDatabaseService {
     }
   }
 
-  getManuallyBlockedCount(): number {
-    return this.blockedNumbers.size;
+  getAllSpamNumbers(): Array<{number: string, info: SpamInfo}> {
+    return Array.from(this.spamDatabase.entries()).map(([number, info]) => ({
+      number,
+      info
+    }));
   }
 
   // Debug method to check database content
-  getDatabaseStats() {
-    return {
-      blockedNumbersCount: this.blockedNumbers.size,
-      spamDatabaseCount: this.spamDatabase.size,
-      commonSpamCount: Array.from(this.spamDatabase.values()).filter(info => info.type === 'common_spam').length,
-      spanishSpamCount: Array.from(this.spamDatabase.values()).filter(info => info.type === 'spanish_spam').length,
-      totalProtected: new Set([...Array.from(this.blockedNumbers), ...Array.from(this.spamDatabase.keys())]).size
-    };
+  getManuallyBlockedCount(): number {
+    return this.blockedNumbers.size;
   }
 
   async blockAllSuspiciousNumbers(): Promise<number> {

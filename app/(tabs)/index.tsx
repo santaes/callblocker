@@ -1,4 +1,4 @@
-import { Link } from 'expo-router';
+import { Link, router } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
   Alert,
@@ -228,6 +228,15 @@ export default function HomeScreen() {
             {refreshing ? 'Processing...' : 'Block All Suspicious Numbers'}
           </Text>
         </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.contactsButton, refreshing && styles.updateButtonDisabled]}
+          onPress={() => router.push('/contacts')}
+          disabled={refreshing}
+        >
+          <Text style={styles.updateButtonText}>
+            View & Block Contacts
+          </Text>
+        </TouchableOpacity>
         {lastUpdateTime && (
           <Text style={styles.lastUpdateText}>
             Last updated: {new Date(lastUpdateTime).toLocaleDateString()}
@@ -286,223 +295,230 @@ export default function HomeScreen() {
 }
 
 const styles = StyleSheet.create({
-container: {
-flex: 1,
-backgroundColor: '#f5f5f5',
-padding: 20,
-},
-containerDark: {
-backgroundColor: '#1a1a1a',
-},
-header: {
-alignItems: 'center',
-marginBottom: 20,
-},
-headerDark: {
-// No special dark styling needed for header
-},
-title: {
-fontSize: 24,
-fontWeight: 'bold',
-color: '#333',
-marginBottom: 5,
-},
-titleDark: {
-color: '#fff',
-},
-subtitle: {
-fontSize: 16,
-color: '#666',
-textAlign: 'center',
-},
-subtitleDark: {
-color: '#ccc',
-},
-addSection: {
-flexDirection: 'row',
-marginBottom: 20,
-gap: 10,
-},
-input: {
-flex: 1,
-height: 50,
-borderWidth: 1,
-borderColor: '#ddd',
-borderRadius: 8,
-paddingHorizontal: 15,
-backgroundColor: '#fff',
-},
-addButton: {
-height: 50,
-backgroundColor: '#e74c3c',
-borderRadius: 8,
-paddingHorizontal: 20,
-justifyContent: 'center',
-alignItems: 'center',
-},
-addButtonText: {
-color: '#fff',
-fontWeight: 'bold',
-},
-statsSection: {
-alignItems: 'center',
-marginBottom: 20,
-},
-themeSwitcher: {
-flexDirection: 'row',
-alignItems: 'center',
-justifyContent: 'space-between',
-width: '100%',
-marginBottom: 15,
-paddingHorizontal: 20,
-},
-label: {
-fontSize: 16,
-color: '#333',
-},
-labelDark: {
-color: '#fff',
-},
-updateButton: {
-backgroundColor: '#3498db',
-paddingHorizontal: 20,
-paddingVertical: 10,
-borderRadius: 8,
-marginBottom: 10,
-},
-updateButtonDisabled: {
-backgroundColor: '#95a5a6',
-},
-blockAllButton: {
-backgroundColor: '#e74c3c',
-paddingHorizontal: 20,
-paddingVertical: 10,
-borderRadius: 8,
-marginBottom: 10,
-},
-topSpammersSection: {
-backgroundColor: '#f8f9fa',
-borderRadius: 8,
-padding: 15,
-marginBottom: 20,
-},
-topSpammersSectionDark: {
-backgroundColor: '#2c3e50',
-},
-topSpammerItem: {
-flexDirection: 'row',
-alignItems: 'center',
-paddingVertical: 8,
-borderBottomWidth: 1,
-borderBottomColor: '#e9ecef',
-},
-topSpammerItemDark: {
-borderBottomColor: '#34495e',
-},
-rankNumber: {
-fontSize: 14,
-fontWeight: 'bold',
-color: '#e74c3c',
-marginRight: 10,
-width: 30,
-},
-rankNumberDark: {
-color: '#ff6b6b',
-},
-spammerNumber: {
-fontSize: 14,
-color: '#333',
-flex: 1,
-},
-spammerNumberDark: {
-color: '#ecf0f1',
-},
-updateButtonText: {
-color: '#fff',
-fontWeight: 'bold',
-},
-lastUpdateText: {
-fontSize: 12,
-color: '#666',
-},
-listSection: {
-flex: 1,
-},
-sectionTitle: {
-fontSize: 18,
-fontWeight: 'bold',
-color: '#333',
-marginBottom: 10,
-},
-sectionTitleDark: {
-color: '#fff',
-},
-numberItem: {
-backgroundColor: '#fff',
-padding: 15,
-borderRadius: 8,
-marginBottom: 10,
-flexDirection: 'row',
-justifyContent: 'space-between',
-alignItems: 'center',
-},
-numberInfo: {
-flex: 1,
-},
-numberText: {
-fontSize: 16,
-color: '#333',
-marginBottom: 4,
-},
-spamType: {
-fontSize: 12,
-color: '#666',
-fontStyle: 'italic',
-},
-buttonContainer: {
-flexDirection: 'row',
-alignItems: 'center',
-},
-infoButton: {
-backgroundColor: '#f39c12',
-paddingHorizontal: 12,
-paddingVertical: 6,
-borderRadius: 4,
-marginRight: 10,
-},
-infoButtonText: {
-color: '#fff',
-fontSize: 12,
-fontWeight: 'bold',
-},
-removeButton: {
-backgroundColor: '#e74c3c',
-paddingHorizontal: 12,
-paddingVertical: 6,
-borderRadius: 4,
-},
-removeButtonText: {
-color: '#fff',
-fontSize: 12,
-fontWeight: 'bold',
-},
-emptyText: {
-textAlign: 'center',
-color: '#666',
-fontStyle: 'italic',
-marginTop: 20,
-},
-footer: {
-marginTop: 20,
-},
-settingsButton: {
-backgroundColor: '#95a5a6',
-padding: 15,
-borderRadius: 8,
-alignItems: 'center',
-},
-settingsButtonText: {
+  container: {
+    flex: 1,
+    backgroundColor: '#f5f5f5',
+    padding: 20,
+  },
+  containerDark: {
+    backgroundColor: '#1a1a1a',
+  },
+  header: {
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  headerDark: {
+    // No special dark styling needed for header
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 5,
+  },
+  titleDark: {
+    color: '#fff',
+  },
+  subtitle: {
+    fontSize: 16,
+    color: '#666',
+    textAlign: 'center',
+  },
+  subtitleDark: {
+    color: '#ccc',
+  },
+  addSection: {
+    flexDirection: 'row',
+    marginBottom: 20,
+    gap: 10,
+  },
+  input: {
+    flex: 1,
+    height: 50,
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 8,
+    paddingHorizontal: 15,
+    backgroundColor: '#fff',
+  },
+  addButton: {
+    height: 50,
+    backgroundColor: '#e74c3c',
+    borderRadius: 8,
+    paddingHorizontal: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  addButtonText: {
     color: '#fff',
     fontWeight: 'bold',
   },
+  statsSection: {
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  themeSwitcher: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    width: '100%',
+    marginBottom: 15,
+    paddingHorizontal: 20,
+  },
+  label: {
+    fontSize: 16,
+    color: '#333',
+  },
+  labelDark: {
+    color: '#fff',
+  },
+  updateButton: {
+    backgroundColor: '#3498db',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 8,
+    marginBottom: 10,
+  },
+  updateButtonDisabled: {
+    backgroundColor: '#95a5a6',
+  },
+  blockAllButton: {
+    backgroundColor: '#e74c3c',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 8,
+    marginBottom: 10,
+  },
+  contactsButton: {
+    backgroundColor: '#9b59b6',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 8,
+    marginBottom: 10,
+  },
+  topSpammersSection: {
+    backgroundColor: '#f8f9fa',
+    borderRadius: 8,
+    padding: 15,
+    marginBottom: 20,
+  },
+  topSpammersSectionDark: {
+    backgroundColor: '#2c3e50',
+  },
+  topSpammerItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e9ecef',
+  },
+  topSpammerItemDark: {
+    borderBottomColor: '#34495e',
+  },
+  rankNumber: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#e74c3c',
+    marginRight: 10,
+    width: 30,
+  },
+  rankNumberDark: {
+    color: '#ff6b6b',
+  },
+  spammerNumber: {
+    fontSize: 14,
+    color: '#333',
+    flex: 1,
+  },
+  spammerNumberDark: {
+    color: '#ecf0f1',
+  },
+  updateButtonText: {
+    color: '#fff',
+    fontWeight: 'bold',
+  },
+  lastUpdateText: {
+    fontSize: 12,
+    color: '#666',
+  },
+  listSection: {
+    flex: 1,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 10,
+  },
+  sectionTitleDark: {
+    color: '#fff',
+  },
+  numberItem: {
+    backgroundColor: '#fff',
+    padding: 15,
+    borderRadius: 8,
+    marginBottom: 10,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  numberInfo: {
+    flex: 1,
+  },
+  numberText: {
+    fontSize: 16,
+    color: '#333',
+    marginBottom: 4,
+  },
+  spamType: {
+    fontSize: 12,
+    color: '#666',
+    fontStyle: 'italic',
+  },
+  buttonContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  infoButton: {
+    backgroundColor: '#f39c12',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 4,
+    marginRight: 10,
+  },
+  infoButtonText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: 'bold',
+  },
+  removeButton: {
+    backgroundColor: '#e74c3c',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 4,
+  },
+  removeButtonText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: 'bold',
+  },
+  emptyText: {
+    textAlign: 'center',
+    color: '#666',
+    fontStyle: 'italic',
+    marginTop: 20,
+  },
+  footer: {
+    marginTop: 20,
+  },
+  settingsButton: {
+    backgroundColor: '#95a5a6',
+    padding: 15,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  settingsButtonText: {
+      color: '#fff',
+      fontWeight: 'bold',
+    },
 });

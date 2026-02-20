@@ -1,12 +1,16 @@
 import { Alert, Linking, PermissionsAndroid, Platform } from 'react-native';
-import SpamDatabaseService from './spamDatabase';
-// Optional import for notifications
+// Handle Metro bundler module resolution for default exports
+import * as SpamDatabaseServiceModule from './spamDatabase';
+const SpamDatabaseService = (SpamDatabaseServiceModule as any).default || SpamDatabaseServiceModule;
+// Optional import for notifications - only on native platforms
 let Notifications: any = null;
-try {
-  Notifications = require('expo-notifications');
-} catch (error) {
-  const errorMessage = error instanceof Error ? error.message : String(error);
-  console.warn('expo-notifications is not available:', errorMessage);
+if (Platform.OS !== 'web') {
+  try {
+    Notifications = require('expo-notifications');
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.warn('expo-notifications is not available:', errorMessage);
+  }
 }
 
 // Helper function to create a mutable array of permissions
@@ -368,6 +372,15 @@ class CallBlockerService {
     return SpamDatabaseService.getDatabaseStats();
   }
 
+  getAllSpamNumbers(): Array<{number: string, info: any}> {
+    if (!this.isInitialized) {
+      console.warn('CallBlocker not initialized');
+      return [];
+    }
+
+    return SpamDatabaseService.getAllSpamNumbers();
+  }
+
   getSpamInfo(phoneNumber: string) {
     if (!this.isInitialized) {
       console.warn('CallBlocker not initialized');
@@ -375,14 +388,6 @@ class CallBlockerService {
     }
 
     return SpamDatabaseService.getSpamInfo(phoneNumber);
-  }
-
-  async updateSpamDatabase(): Promise<void> {
-    if (!this.isInitialized) {
-      await this.initialize();
-    }
-
-    await SpamDatabaseService.updateSpamDatabase();
   }
 
   async blockAllSuspiciousNumbers(): Promise<number> {
