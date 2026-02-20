@@ -35,19 +35,17 @@ const SPAM_DATABASES: SpamDatabase[] = [
   {
     name: 'Spanish Spam Database',
     urls: [
-      // In web, use CORS proxy first
+      // For web, use CORS proxies first to bypass CORS restrictions
       ...(isWeb ? [
         'https://corsproxy.io/?' + encodeURIComponent('https://raw.githubusercontent.com/mv12star/lista-telefonos-spam/main/numeros_spam_dialer.txt'),
         'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent('https://raw.githubusercontent.com/mv12star/lista-telefonos-spam/main/numeros_spam_dialer.txt'),
         'https://api.allorigins.win/raw?url=' + encodeURIComponent('https://raw.githubusercontent.com/mv12star/lista-telefonos-spam/main/numeros_spam_dialer.txt'),
       ] : []),
       
-      // Direct GitHub URL (works in React Native)
-      'https://raw.githubusercontent.com/mv12star/lista-telefonos-spam/main/numeros_spam_dialer.txt',
-      
-      // Alternative mirrors
-      'https://raw.githack.com/mv12star/lista-telefonos-spam/main/numeros_spam_dialer.txt',
+      // Direct URLs for mobile (no CORS issues)
       'https://cdn.jsdelivr.net/gh/mv12star/lista-telefonos-spam@main/numeros_spam_dialer.txt',
+      'https://raw.githack.com/mv12star/lista-telefonos-spam/main/numeros_spam_dialer.txt',
+      'https://raw.githubusercontent.com/mv12star/lista-telefonos-spam/main/numeros_spam_dialer.txt',
       'https://raw.githubusercontent.com/mv12star/lista-telefonos-spam/main/numeros_spam_dialer.txt?raw=true'
     ],
     type: 'spanish_spam'
@@ -174,8 +172,8 @@ class SpamDatabaseService {
   }
 
   private async tryFetchUrl(url: string, signal: AbortSignal, attempt: number = 1): Promise<string> {
-    const maxRetries = 2;
-    const retryDelay = 1000;
+    const maxRetries = 3;
+    const retryDelay = 2000;
     
     try {
       console.log(`Trying URL: ${url} (attempt ${attempt}/${maxRetries + 1})`);
@@ -184,7 +182,7 @@ class SpamDatabaseService {
       const timeoutId = setTimeout(() => {
         console.log(`Request to ${url} timed out`);
         controller.abort();
-      }, 20000); // 20 second timeout
+      }, 15000); // 15 second timeout
       
       try {
         const response = await fetch(url, {

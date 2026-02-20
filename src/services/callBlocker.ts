@@ -405,6 +405,14 @@ class CallBlockerService {
 
     return SpamDatabaseService.getLastUpdateTime();
   }
+
+  async updateSpamDatabase(): Promise<void> {
+    if (!this.isInitialized) {
+      await this.initialize();
+    }
+
+    return SpamDatabaseService.updateSpamDatabase();
+  }
 }
 
 export default new CallBlockerService();

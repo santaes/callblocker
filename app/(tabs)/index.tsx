@@ -1,16 +1,16 @@
 import { Link, router } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
-  Alert,
-  FlatList,
-  ListRenderItem,
-  StyleSheet,
-  Switch,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-  useColorScheme
+    Alert,
+    FlatList,
+    ListRenderItem,
+    StyleSheet,
+    Switch,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
+    useColorScheme
 } from 'react-native';
 import CallBlockerService from '../../src/services/callBlocker';
 
@@ -135,7 +135,8 @@ export default function HomeScreen() {
         [{ text: 'OK', onPress: () => {} }]
       );
     } catch (error) {
-      Alert.alert('Error', 'Failed to update spam database');
+      const errorMessage = error instanceof Error ? error.message : 'Failed to update spam database';
+      Alert.alert('Error', errorMessage);
       console.error(error);
     } finally {
       setRefreshing(false);
